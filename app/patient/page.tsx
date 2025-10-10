@@ -1,89 +1,139 @@
 "use client";
-
 import BloodPressureChart from "@/component/Chart";
 import Image from "next/image";
-import React from "react";
+import React, { useEffect, useState } from "react";
 
-// Sample patient data
-const patients = [
-  { name: "Emily Williams", age: 18, gender: "Female", avatar: "/icons/Layer 8.png" },
-  { name: "Ryan Johnson", age: 45, gender: "Male", avatar: "/icons/Layer1.png" },
-  { name: "Brandon Mitchell", age: 36, gender: "Male", avatar: "/icons/Layer 3.png" },
-  { name: "Jessica Taylor", age: 28, gender: "Female", avatar: "/icons/Layer6.png" },
-  { name: "Samantha Johnson", age: 56, gender: "Female", avatar: "/icons/Layer 2.png" },
-  { name: "Ashley Martinez", age: 18, gender: "Female", avatar: "/icons/Layer6.png" },
-  { name: "Olivia Brown", age: 18, gender: "Female", avatar: "/icons/Layer6.png" },
-  { name: "Tyler Davis", age: 18, gender: "Male", avatar: "/icons/Layer6.png" },
-  { name: "Kevin Anderson", age: 18, gender: "Female", avatar: "/icons/Layer6.png" },
-  { name: "Dylan Thompson", age: 18, gender: "Male", avatar: "/icons/Layer6.png" },
-  { name: "Nathan Evans", age: 18, gender: "Male", avatar: "/icons/Layer6.png" },
-  { name: "Mike Nolan", age: 18, gender: "Male", avatar: "/icons/Layer6.png" },
-];
+const API_URL = "https://fedskillstest.coalitiontechnologies.workers.dev"
 
-const vitals = [
-  {
-    icon: "/icons/respiratory rate.png",
-    label: "Respiratory Rate",
-    value: "20 bpm",
-    status: "Normal",
-    bg: "#E0F3FA",
-  },
-  {
-    icon: "/icons/temperature.png",
-    label: "Temperature",
-    value: "98.6°F",
-    status: "Normal",
-    bg: "#FFE6E9",
-  },
-  {
-    icon: "/icons/HeartBPM.png",
-    label: "Heart Rate",
-    value: "78 bpm",
-    status: "Lower than Average",
-    bg: "#FFE6E9",
-  },
-];
-
-const diagnosisList = [
-  {
-    diagnosis: "Hypertension",
-    description: "Chronic high blood pressure",
-    status: "Under Observation",
-  },
-  {
-    diagnosis: "Type 2 Diabetes",
-    description: "Insulin resistance and elevated blood sugar",
-    status: "Cured",
-  },
-  {
-    diagnosis: "Asthma",
-    description: "Recurrent episodes of bronchial constriction",
-    status: "Inactive",
-  },
-];
+// Helper to format date
+function formatDate(dateString: string) {
+  const date = new Date(dateString);
+  return date.toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" });
+};
 
 function Patients() {
+  const [data, setData] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    async function fetchData() {
+      try {
+        const username = process.env.NEXT_PUBLIC_API_USERNAME;
+        const password = process.env.NEXT_PUBLIC_API_PASSWORD;
+
+        // Encode credentials for Basic Auth
+        const basicAuth = "Basic " + (typeof window !== 'undefined' ? window.btoa(`${username}:${password}`) : Buffer.from(`${username}:${password}`).toString('base64'));
+        const res = await fetch(API_URL, {
+          headers: {
+            Authorization: basicAuth,
+          },
+        });
+        if (!res.ok) throw new Error("Failed to fetch");
+        const json = await res.json();
+
+        // Find Jessica Taylor in the returned data
+        const jessica = Array.isArray(json)
+          ? json.find((p: any) => p.name === "Jessica Taylor")
+          : json;
+        setData(jessica);
+      } catch (err: any) {
+        setError(err.message);
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchData();
+  }, []);
+
+  if (loading) return <div className="p-8">Loading...</div>;
+  if (error) return <div className="p-8 text-red-500">{error}</div>;
+  if (!data) return <div className="p-8">No data found.</div>;
+
+  // Get latest diagnosis history (assume last entry is latest)
+  const latestHistory = data.diagnosis_history[data.diagnosis_history.length - 1];
+  const vitals = [
+    {
+      icon: "/icons/respiratory rate.png",
+      label: "Respiratory Rate",
+      value: `${latestHistory.respiratory_rate.value} bpm`,
+      status: latestHistory.respiratory_rate.levels,
+      bg: "#E0F3FA",
+    },
+    {
+      icon: "/icons/temperature.png",
+      label: "Temperature",
+      value: `${latestHistory.temperature.value}°F`,
+      status: latestHistory.temperature.levels,
+      bg: "#FFE6E9",
+    },
+    {
+      icon: "/icons/HeartBPM.png",
+      label: "Heart Rate",
+      value: `${latestHistory.heart_rate.value} bpm`,
+      status: latestHistory.heart_rate.levels,
+      bg: "#FFE6E9",
+    },
+  ];
+
+  // Diagnostic list
+  const diagnosisList = data.diagnostic_list.map((d: any) => ({
+    diagnosis: d.name,
+    description: d.description,
+    status: d.status,
+  }));
+
+  // Lab results (show up to 5, fill with placeholders if needed)
+  const labResults = [
+    ...data.lab_results,
+    ...["Radiology Reports", "X-Rays", "Urine Test"].filter(l => !data.lab_results.includes(l)),
+  ].slice(0, 5);
+
+  // Profile info
+  const profileInfo = [
+    {
+      icon: "/icons/calendar.png",
+      label: "Date Of Birth",
+      value: formatDate(data.date_of_birth),
+    },
+    {
+      icon: "/icons/FemaleIcon.png",
+      label: "Gender",
+      value: data.gender,
+    },
+    {
+      icon: "/icons/PhoneIcon.png",
+      label: "Contact Info.",
+      value: data.phone_number,
+    },
+    {
+      icon: "/icons/PhoneIcon.png",
+      label: "Emergency Contacts",
+      value: data.emergency_contact,
+    },
+    {
+      icon: "/icons/InsuranceIcon.png",
+      label: "Insurance Provider",
+      value: data.insurance_type,
+    },
+  ];
+
   return (
     <div className="flex justify-around p-4 relative">
-      {/* Left Panel - Patient List */}
-      <aside className="absolute top-[122px] left-[18px] w-[367px] h-[1054px] bg-white rounded-[16px] shadow-lg overflow-y-auto">
+      {/* Left Panel - Only Jessica Taylor */}
+      <aside className="absolute top-[122px] left-[18px] w-[367px] h-[300px] bg-white rounded-[16px] shadow-lg overflow-y-auto">
         <div className="flex justify-between items-center p-4">
-          <p className="font-bold text-lg text-gray-800">Patients</p>
-          <Image src="/icons/search.png" alt="search" width={20} height={20} />
+          <p className="font-bold text-lg text-gray-800">Patient</p>
         </div>
-
-        {patients.map((patient, idx) => (
-          <div key={idx} className="flex justify-between items-center gap-2 p-4">
-            <div className="flex items-center gap-4">
-              <Image src={patient.avatar} alt={patient.name} width={48} height={48} className="rounded-full" />
-              <div>
-                <p className="font-bold text-gray-800">{patient.name}</p>
-                <p className="text-sm text-gray-500">{patient.gender}, {patient.age}</p>
-              </div>
+        <div className="flex justify-between items-center gap-2 p-4">
+          <div className="flex items-center gap-4">
+            <Image src={data.profile_picture} alt={data.name} width={48} height={48} className="rounded-full" />
+            <div>
+              <p className="font-bold text-gray-800">{data.name}</p>
+              <p className="text-sm text-gray-500">{data.gender}, {data.age}</p>
             </div>
-            <Image src="/icons/more2.png" alt="More options" width={20} height={20} />
           </div>
-        ))}
+        </div>
       </aside>
 
       {/* Middle Panel - Diagnosis History and Vitals */}
@@ -129,7 +179,7 @@ function Patients() {
           </div>
 
           <div className="absolute top-[149px] left-[20px] w-[726px] flex flex-col gap-3">
-            {diagnosisList.map((item, index) => (
+            {diagnosisList.map((item: any, index: number) => (
               <div key={index} className="w-full h-[48px] px-6 flex justify-between items-center bg-white text-sm text-gray-700">
                 <span>{item.diagnosis}</span>
                 <span>{item.description}</span>
@@ -147,53 +197,27 @@ function Patients() {
       >
         <div className="flex flex-col items-center gap-6">
           <div className="flex flex-col items-center gap-3">
-            <Image src="/icons/Layer 2@2x.png" alt="Profile" width={200} height={200} />
-            <p className="text-2xl font-bold">Jessica Taylor</p>
+            <Image src={data.profile_picture} alt={data.name} width={200} height={200} />
+            <p className="text-2xl text-black font-bold">{data.name}</p>
           </div>
         </div>
 
         <div className="mt-4">
-          {[
-            {
-              icon: "/icons/calendar.png",
-              label: "Date Of Birth",
-              value: "August 23, 1996",
-            },
-            {
-              icon: "/icons/FemaleIcon.png",
-              label: "Gender",
-              value: "Female",
-            },
-            {
-              icon: "/icons/PhoneIcon.png",
-              label: "Contact Info.",
-              value: "(415) 555-1234",
-            },
-            {
-              icon: "/icons/PhoneIcon.png",
-              label: "Emergency Contacts",
-              value: "(415) 555-5678",
-            },
-            {
-              icon: "/icons/InsuranceIcon.png",
-              label: "Insurance Provider",
-              value: "Sunrise Health Assurance",
-            },
-          ].map((item, idx) => (
+          {profileInfo.map((item, idx) => (
             <div key={idx} className="flex gap-4 p-4 items-center">
               <div className="w-[20px] h-[20px] flex items-center justify-center bg-gray shadow rounded-full">
                 <Image src={item.icon} alt={item.label} width={24} height={24} />
               </div>
               <div className="flex flex-col">
                 <p className="text-sm text-gray-500">{item.label}</p>
-                <p className="text-base font-semibold">{item.value}</p>
+                <p className="text-base text-black font-semibold">{item.value}</p>
               </div>
             </div>
           ))}
         </div>
 
         <div className="mt-6 flex justify-center">
-          <button className="w-[220px] h-[41px] rounded-full bg-[#01F0D0] font-bold text-sm">
+          <button className="w-[220px] h-[41px] rounded-full bg-[#01F0D0] font-bold text-sm cursor-pointer hover:opacity-80">
             Show All Information
           </button>
         </div>
@@ -205,7 +229,7 @@ function Patients() {
       >
         <p className="font-bold text-lg text-gray-800 mb-4">Lab Results</p>
         <div className="grid grid-rows-5 gap-4 mt-5">
-          {["Blood Tests", "CT Scans", "Radiology Reports", "X-Rays", "Urine Test"].map((label, index) => (
+          {labResults.map((label: string, index: number) => (
             <div
               key={index}
               className="grid grid-cols-[1fr_auto] items-center"
@@ -225,4 +249,4 @@ function Patients() {
   );
 }
 
-export default Patients;
+export default Patients

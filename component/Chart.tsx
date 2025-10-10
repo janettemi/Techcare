@@ -10,7 +10,7 @@ import {
   Tooltip,
   Legend,
 } from "chart.js"
-import { ArrowDown } from "lucide-react"
+//import { ArrowDown } from "lucide-react"
 import Image from "next/image"
 
 ChartJS.register(LineElement, CategoryScale, LinearScale, PointElement, Title, Tooltip, Legend)
@@ -67,9 +67,9 @@ const BloodPressureChart = () => {
         <div className="flex flex-col gap-3" >
           <div className="flex items-center gap-3">
           <span className="w-3 h-3 rounded-full bg-[#C26EB4] inline-block" />
-          <p className="text-sm font-semibold flex items-center gap-1">Systolic</p>
+          <p className="text-sm font-semibold flex text-black items-center gap-1">Systolic</p>
           </div>
-            <h2 className="text-sm font-semibold">160 </h2>
+            <h2 className="text-sm text-black font-semibold">160 </h2>
             <div className="flex items-center gap-2 cursor-pointer hover:opacity-80">
             <Image src="/icons/expand.png" alt="Expand" height={11} width={6} />
             <p className="text-xs text-gray-500">Higher than Average</p>
@@ -81,9 +81,9 @@ const BloodPressureChart = () => {
         <div className="flex flex-col gap-3" >
           <div className="flex items-center gap-3">
           <span className="w-3 h-3 rounded-full bg-[#8C6FE6] inline-block" />
-          <p className="text-sm font-semibold flex items-center gap-1">Diastolic</p>
+          <p className="text-sm font-semibold text-black flex items-center gap-1">Diastolic</p>
           </div>
-            <h2 className="text-sm font-semibold">78</h2>
+            <h2 className="text-sm text-black font-semibold">78</h2>
             <div className="flex items-center gap-2 cursor-pointer hover:opacity-80">
             <Image src="/icons/expand.png" alt="Expand" height={11} width={6} />
             <p className="text-xs text-gray-500">Lower than Average</p>
