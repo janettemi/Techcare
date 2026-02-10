@@ -3,6 +3,38 @@ import BloodPressureChart from "@/component/Chart";
 import Image from "next/image";
 import React, { useEffect, useState } from "react";
 
+interface DiagnosisHistory {
+  month: string;
+  year: number;
+  blood_pressure: {
+    systolic: { value: number; levels: string };
+    diastolic: { value: number; levels: string };
+  };
+  heart_rate: { value: number; levels: string };
+  respiratory_rate: { value: number; levels: string };
+  temperature: { value: number; levels: string };
+}
+
+interface DiagnosticListItem {
+  name: string;
+  description: string;
+  status: string;
+}
+
+interface PatientData {
+  name: string;
+  gender: string;
+  age: number;
+  profile_picture: string;
+  date_of_birth: string;
+  phone_number: string;
+  emergency_contact: string;
+  insurance_type: string;
+  diagnosis_history: DiagnosisHistory[];
+  diagnostic_list: DiagnosticListItem[];
+  lab_results: string[];
+}
+
 const API_URL = "https://fedskillstest.coalitiontechnologies.workers.dev"
 
 // Helper to format date
@@ -12,7 +44,7 @@ function formatDate(dateString: string) {
 };
 
 function Patients() {
-  const [data, setData] = useState<any>(null);
+  const [data, setData] = useState<PatientData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
@@ -77,10 +109,10 @@ function Patients() {
   ];
 
   // Diagnostic list
-  const diagnosisList = data.diagnostic_list.map((d: any) => ({
-    diagnosis: d.name,
-    description: d.description,
-    status: d.status,
+  const diagnosisList = data.diagnostic_list.map((DiagnosticListItem) => ({
+    diagnosis: DiagnosticListItem.name,
+    description: DiagnosticListItem.description,
+    status: DiagnosticListItem.status,
   }));
 
   // Lab results (show up to 5, fill with placeholders if needed)
